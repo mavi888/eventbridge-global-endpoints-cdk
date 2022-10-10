@@ -1,21 +1,80 @@
 #!/usr/bin/env node
 import 'source-map-support/register';
 import * as cdk from 'aws-cdk-lib';
-import { CdkEventbridgeGlobalendpointsStack } from '../lib/cdk-eventbridge-globalendpoints-stack';
+import { EventBusStack } from '../lib/event-bus-stack';
+import { GlobalEndpointStack } from '../lib/global-endpoint-stack';
+import { TestingStack } from '../lib/testing-stack';
+
+import * as config from '../config.json';
+import { BoilerPlateStack } from '../lib/boilerplate-stack';
+
+const mainRegion = config.mainRegion;
+const secondaryRegion = config.secondaryRegion;
+const eventBusName = config.eventBusName;
 
 const app = new cdk.App();
-new CdkEventbridgeGlobalendpointsStack(app, 'CdkEventbridgeGlobalendpointsStack', {
-  /* If you don't specify 'env', this stack will be environment-agnostic.
-   * Account/Region-dependent features and context lookups will not work,
-   * but a single synthesized template can be deployed anywhere. */
 
-  /* Uncomment the next line to specialize this stack for the AWS Account
-   * and Region that are implied by the current CLI configuration. */
-  // env: { account: process.env.CDK_DEFAULT_ACCOUNT, region: process.env.CDK_DEFAULT_REGION },
+// NOTE: Need to run first before anything else
+const eventBusStackMainRegion = new EventBusStack(
+	app,
+	'EventBusStackMainRegion',
+	{
+		eventBusName: eventBusName,
+		env: {
+			region: mainRegion,
+		},
+	}
+);
 
-  /* Uncomment the next line if you know exactly what Account and Region you
-   * want to deploy the stack to. */
-  // env: { account: '123456789012', region: 'us-east-1' },
+const eventBusStackSecondaryRegion = new EventBusStack(
+	app,
+	'EventBusStackSecondaryRegion',
+	{
+		eventBusName: eventBusName,
+		env: {
+			region: secondaryRegion,
+		},
+	}
+);
 
-  /* For more information, see https://docs.aws.amazon.com/cdk/latest/guide/environments.html */
+// NOTE: Only run this after the buses are created
+const boilerPlateStack = new BoilerPlateStack(app, 'BoilerPlateStack', {
+	env: {
+		region: mainRegion,
+	},
+	eventBusName: eventBusName,
+});
+
+const globalEndpointStack = new GlobalEndpointStack(
+	app,
+	'GlobalEndpointStack',
+	{
+		env: {
+			region: mainRegion,
+		},
+		replicatedRegion: secondaryRegion,
+		eventBusArn1: eventBusStackMainRegion.eventBusArn,
+		eventBusArn2: eventBusStackSecondaryRegion.eventBusArn,
+		healthCheckArn: boilerPlateStack.healthCheckArn,
+		replicatedRoleArn: boilerPlateStack.replicationRoleArn, // NOTE: the role for the global EB is created in console due to the IaC way didnt work
+	}
+);
+
+// NOTE deploy after the global endpoint is ready
+const endpointId = 'TODO'; // YOU NEED TO INPUT THIS ONE MANUALLY FROM THE DEPLOYMENT OF THE GLOBAL ENDPOINT
+
+new TestingStack(app, 'TestingStackMain', {
+	env: {
+		region: mainRegion,
+	},
+	eventBusName: eventBusName,
+	endpointId: endpointId,
+});
+
+new TestingStack(app, 'TestingStackSecondary', {
+	env: {
+		region: secondaryRegion,
+	},
+	eventBusName: eventBusName,
+	endpointId: endpointId,
 });

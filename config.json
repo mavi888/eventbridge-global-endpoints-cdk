@@ -1,0 +1,6 @@
+{
+	"stage": "dev",
+	"mainRegion": "us-east-1",
+	"secondaryRegion": "eu-west-1",
+	"eventBusName": "TestingEventBridgeGlobalEndpoint"
+}

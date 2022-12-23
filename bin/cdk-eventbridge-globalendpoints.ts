@@ -4,9 +4,10 @@ import * as cdk from 'aws-cdk-lib';
 import { EventBusStack } from '../lib/event-bus-stack';
 import { GlobalEndpointStack } from '../lib/global-endpoint-stack';
 import { TestingStack } from '../lib/testing-stack';
+import { BoilerPlateStack } from '../lib/boilerplate-stack';
 
 import * as config from '../config.json';
-import { BoilerPlateStack } from '../lib/boilerplate-stack';
+import { PutEventsStack } from '../lib/put-events-stack';
 
 const mainRegion = config.mainRegion;
 const secondaryRegion = config.secondaryRegion;
@@ -14,7 +15,7 @@ const eventBusName = config.eventBusName;
 
 const app = new cdk.App();
 
-// NOTE: Need to run first before anything else
+// PRIMARY STACK ------
 const eventBusStackMainRegion = new EventBusStack(
 	app,
 	'EventBusStackMainRegion',
@@ -26,6 +27,14 @@ const eventBusStackMainRegion = new EventBusStack(
 	}
 );
 
+new TestingStack(app, 'TestingStackMain', {
+	env: {
+		region: mainRegion,
+	},
+	eventBusName: eventBusName,
+});
+
+// SECONDARY STACK ------
 const eventBusStackSecondaryRegion = new EventBusStack(
 	app,
 	'EventBusStackSecondaryRegion',
@@ -37,7 +46,14 @@ const eventBusStackSecondaryRegion = new EventBusStack(
 	}
 );
 
-// NOTE: Only run this after the buses are created
+new TestingStack(app, 'TestingStackSecondary', {
+	env: {
+		region: secondaryRegion,
+	},
+	eventBusName: eventBusName,
+});
+
+// HEALTHCHECKS AND OTHER GLOBAL CONFIGURATIONS -----
 const boilerPlateStack = new BoilerPlateStack(app, 'BoilerPlateStack', {
 	env: {
 		region: mainRegion,
@@ -45,6 +61,7 @@ const boilerPlateStack = new BoilerPlateStack(app, 'BoilerPlateStack', {
 	eventBusName: eventBusName,
 });
 
+// GLOBAL ENDPOINT -----
 const globalEndpointStack = new GlobalEndpointStack(
 	app,
 	'GlobalEndpointStack',
@@ -60,21 +77,10 @@ const globalEndpointStack = new GlobalEndpointStack(
 	}
 );
 
-// NOTE deploy after the global endpoint is ready
-const endpointId = 'TODO'; // YOU NEED TO INPUT THIS ONE MANUALLY FROM THE DEPLOYMENT OF THE GLOBAL ENDPOINT
+// STACK THAT PUT EVENTS USING THE GLOBAL ENDPOINT
+const endpointId = 'MANUAL'; // globalEndpointStack.endpointId; Not supported cross stack references
 
-new TestingStack(app, 'TestingStackMain', {
-	env: {
-		region: mainRegion,
-	},
-	eventBusName: eventBusName,
-	endpointId: endpointId,
-});
-
-new TestingStack(app, 'TestingStackSecondary', {
-	env: {
-		region: secondaryRegion,
-	},
+new PutEventsStack(app, 'PutEventsStack', {
 	eventBusName: eventBusName,
 	endpointId: endpointId,
 });

@@ -20,8 +20,8 @@ export class GlobalEndpointStack extends Stack {
 		const region = props.env.region;
 
 		const endpoint = new CfnEndpoint(this, 'EventBridgeGlobalEndpoint', {
-			name: 'EventBridgeGlobalEndpoint',
-			description: 'EventBridgeGlobalEndpoint',
+			name: 'SimpleEventBridgeGlobalEndpoint',
+			description: 'SimpleEventBridgeGlobalEndpoint',
 			eventBuses: [
 				{ eventBusArn: props.eventBusArn1 },
 				{ eventBusArn: props.eventBusArn2 },

@@ -101,11 +101,7 @@ export class BoilerPlateStack extends Stack {
 				new PolicyStatement({
 					effect: Effect.ALLOW,
 					actions: ['iam:PassRole'],
-					resources: [
-						`arn:aws:iam::${
-							Stack.of(this).account
-						}:role/service-role/Amazon_EventBridge_Invoke*`,
-					],
+					resources: [replicationRole.roleArn],
 					conditions: {
 						StringLike: {
 							'iam:PassedToService': 'events.amazonaws.com',

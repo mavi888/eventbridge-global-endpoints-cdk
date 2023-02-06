@@ -73,14 +73,14 @@ const globalEndpointStack = new GlobalEndpointStack(
 		eventBusArn1: eventBusStackMainRegion.eventBusArn,
 		eventBusArn2: eventBusStackSecondaryRegion.eventBusArn,
 		healthCheckArn: boilerPlateStack.healthCheckArn,
-		replicatedRoleArn: boilerPlateStack.replicationRoleArn, // NOTE: the role for the global EB is created in console due to the IaC way didnt work
+		replicatedRoleArn: boilerPlateStack.replicationRoleArn,
 	}
 );
 
-// STACK THAT PUT EVENTS USING THE GLOBAL ENDPOINT
-const endpointId = 'MANUAL'; // globalEndpointStack.endpointId; Not supported cross stack references
-
 new PutEventsStack(app, 'PutEventsStack', {
+	env: {
+		region: mainRegion,
+	},
 	eventBusName: eventBusName,
-	endpointId: endpointId,
+	endpointId: globalEndpointStack.endpointId,
 });
